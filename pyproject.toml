@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kitchenowl-cli"
+version = "0.1.0"
+description = "CLI for interacting with the KitchenOwl API."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "click>=8.1.7",
+  "requests>=2.31.0",
+  "PyYAML>=6.0.1",
+  "rich>=13.7.1",
+  "pytest>=8.1.0",
+]
+
+[project.scripts]
+kitchenowl = "kitchenowl_cli.main:cli"
+
+[tool.setuptools]
+packages = ["kitchenowl_cli", "kitchenowl_cli.commands"]
