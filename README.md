@@ -15,7 +15,7 @@ Command-line client for KitchenOwl's `/api` endpoints, covering auth, household,
 ## Quick install
 
 ```bash
-cd /Users/andreas/Documents/code/kitchenowl/kitchenowl-cli
+cd kitchenowl-cli
 python3 -m pip install -e .
 ```
 

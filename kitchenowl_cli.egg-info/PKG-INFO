@@ -29,7 +29,7 @@ Command-line client for KitchenOwl's `/api` endpoints, focused on recipe workflo
 ## Install (local)
 
 ```bash
-cd /Users/andreas/Documents/code/kitchenowl/kitchenowl-cli
+cd kitchenowl-cli
 python3 -m pip install -e .
 ```
 
