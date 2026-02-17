@@ -1,0 +1,2 @@
+[console_scripts]
+kitchenowl = kitchenowl_cli.main:cli
