@@ -1,0 +1,77 @@
+Metadata-Version: 2.4
+Name: kitchenowl-cli
+Version: 0.1.0
+Summary: CLI for interacting with the KitchenOwl API.
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: click>=8.1.7
+Requires-Dist: requests>=2.31.0
+Requires-Dist: PyYAML>=6.0.1
+Requires-Dist: rich>=13.7.1
+
+# kitchenowl-cli
+
+Command-line client for KitchenOwl's `/api` endpoints, focused on recipe workflows.
+
+## Features
+
+- JWT login with refresh-token rotation support.
+- Config storage in `~/.config/kitchenowl/config.json`.
+- Household listing and default household selection.
+- Recipe basics:
+  - list recipes
+  - get recipe details
+  - add recipes
+  - edit recipes
+  - delete recipes
+- Script-friendly `--json` output and YAML/JSON file payload support.
+
+## Install (local)
+
+```bash
+cd /Users/andreas/Documents/code/kitchenowl/kitchenowl-cli
+python3 -m pip install -e .
+```
+
+## Quick start
+
+```bash
+kitchenowl auth login --server https://your-kitchenowl.example.com
+kitchenowl household list
+kitchenowl household use 1
+kitchenowl recipe list
+kitchenowl recipe get 42
+kitchenowl recipe add --name "Tomato Soup" --description "Simple soup" --yields 2 --time 25
+kitchenowl recipe edit 42
+kitchenowl recipe delete 42
+```
+
+## File-based create/edit
+
+```bash
+kitchenowl recipe add --household-id 1 --from-file recipe.yml
+kitchenowl recipe edit 42 --from-file recipe.yml
+```
+
+Example `recipe.yml`:
+
+```yaml
+name: Tomato Soup
+description: Simple soup
+time: 25
+cook_time: 20
+prep_time: 5
+yields: 2
+visibility: 0
+source: ""
+items:
+  - name: Tomatoes
+    description: 6 pcs
+    optional: false
+  - name: Salt
+    description: 1 tsp
+    optional: false
+tags:
+  - soup
+  - vegetarian
+```
