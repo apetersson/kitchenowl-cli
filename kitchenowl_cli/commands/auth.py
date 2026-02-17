@@ -24,9 +24,15 @@ def auth() -> None:
 def login(server: str | None, username: str | None, password: str | None, device: str) -> None:
     """Login and store access + refresh tokens."""
     cfg = load_config()
-    server_url = server or cfg.get("server_url")
-    if not server_url:
-        server_url = click.prompt("Server URL")
+    if server is not None:
+        server_url = server
+    else:
+        default_server = cfg.get("server_url", "")
+        server_url = click.prompt(
+            "Server URL",
+            default=default_server,
+            show_default=bool(default_server),
+        )
     if not username:
         username = click.prompt("Username or email")
     if not password:
@@ -74,9 +80,15 @@ def signup(
 ) -> None:
     """Register a new user and store its tokens."""
     cfg = load_config()
-    server_url = server or cfg.get("server_url")
-    if not server_url:
-        server_url = click.prompt("Server URL")
+    if server is not None:
+        server_url = server
+    else:
+        default_server = cfg.get("server_url", "")
+        server_url = click.prompt(
+            "Server URL",
+            default=default_server,
+            show_default=bool(default_server),
+        )
     if not username:
         username = click.prompt("Username or email")
     if not name:
