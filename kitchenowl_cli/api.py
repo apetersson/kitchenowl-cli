@@ -9,7 +9,12 @@ from .config import save_config
 
 
 def normalize_server_url(url: str) -> str:
-    return url.rstrip("/")
+    normalized = url.rstrip("/")
+    # Accept both base URLs (https://host) and API URLs (https://host/api)
+    # from user input/config without producing /api/api/* requests.
+    if normalized.endswith("/api"):
+        normalized = normalized[:-4]
+    return normalized
 
 
 def _extract_error(response: requests.Response) -> str:
@@ -125,6 +130,9 @@ class ApiClient:
 
     def get(self, path: str, *, params: dict[str, Any] | None = None) -> Any:
         return self.request("GET", path, params=params)
+
+    def get_public(self, path: str, *, params: dict[str, Any] | None = None) -> Any:
+        return self.request("GET", path, params=params, auth="none")
 
     def post(self, path: str, *, json: dict[str, Any] | None = None) -> Any:
         return self.request("POST", path, json=json)

@@ -5,7 +5,7 @@ Command-line client for KitchenOwl's `/api` endpoints, covering auth, household,
 ## Supported CLI surface
 
 - `kitchenowl auth [login|logout|status|signup]` — JWT login with refresh, logout and signup helpers.  
-- `kitchenowl config [show|set-default-household]` — manage stored tokens/default household.  
+- `kitchenowl config [show|set-default-household|server-settings]` — manage stored tokens/default household and inspect read-only server flags from `/api/health`.  
 - `kitchenowl household [list|use|get|create|update|delete]` and `kitchenowl household member [list|add|remove]`.  
 - `kitchenowl recipe [list|get|add|edit|delete]` with JSON/YAML payload support and flag-based editors.  
 - `kitchenowl shoppinglist [list|create|delete|items|add-item|add-item-by-name|suggested|remove-item]` plus the dedicated `remove-item` command to mark items done.  
@@ -23,6 +23,8 @@ python3 -m pip install -e .
 
 ```bash
 kitchenowl auth login --server https://your-kitchenowl.example.com
+# tip: both https://host and https://host/api are accepted
+kitchenowl config server-settings
 kitchenowl household list
 kitchenowl household member list --household-id 42
 kitchenowl household member add 17 --household-id 42 --admin
@@ -35,6 +37,24 @@ kitchenowl recipe delete 123
 kitchenowl user list
 kitchenowl auth signup --username newuser --name "New User"
 ```
+
+`auth login` / `auth signup` will always ask for the server URL when `--server` is not provided, using your last saved server as the default.
+
+## Read-only server settings
+
+Inspect the public read-only settings exposed by the server health endpoint (works without login if you pass `--server`):
+
+```bash
+kitchenowl config server-settings --server https://your-kitchenowl.example.com
+kitchenowl config server-settings --json
+```
+
+This currently shows:
+- `open_registration`
+- `email_mandatory`
+- `oidc_provider`
+- `privacy_policy` (if configured)
+- `terms` (if configured)
 
 ## File-based recipe editing
 
