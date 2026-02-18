@@ -48,6 +48,13 @@ kitchenowl recipe edit 123 --description "Updated"
 kitchenowl recipe delete 123
 ```
 
+### Managing ingredients / items
+
+```bash
+kitchenowl recipe edit 123 --item "Lettuce|1 head|false"
+# --ingredient is an alias for --item and also appends to the backend 'items' list
+```
+
 ## User admin
 
 ```bash

@@ -27,6 +27,7 @@ ALLOWED_FIELDS = {
     "photo",
     "visibility",
     "items",
+    "ingredients",
     "tags",
 }
 
@@ -49,6 +50,10 @@ def _parse_item(item: str) -> dict[str, Any]:
     if len(parts) > 2 and parts[2]:
         parsed["optional"] = _as_bool(parts[2])
     return parsed
+
+
+def _parse_ingredient(ingredient: str) -> dict[str, Any]:
+    return _parse_item(ingredient)
 
 
 def _household_id(config: dict[str, Any], arg_household_id: int | None) -> int:
@@ -81,12 +86,21 @@ def _editable_recipe(recipe: dict[str, Any]) -> dict[str, Any]:
         }
         for item in recipe.get("items", [])
     ]
+    data["ingredients"] = [
+        {
+            "name": ingredient.get("name", ""),
+            "description": ingredient.get("description", ""),
+            "optional": ingredient.get("optional", True),
+        }
+        for ingredient in recipe.get("ingredients", recipe.get("items", []))
+    ]
     data["tags"] = [tag["name"] if isinstance(tag, dict) else tag for tag in recipe.get("tags", [])]
     return data
 
 
 def _normalize_payload(raw: dict[str, Any], *, for_update: bool) -> dict[str, Any]:
     payload = {k: v for k, v in raw.items() if k in ALLOWED_FIELDS and v is not None}
+    ingredient_entries = payload.pop("ingredients", None)
     if not for_update:
         payload.setdefault("description", "")
     if "items" in payload:
@@ -107,6 +121,27 @@ def _normalize_payload(raw: dict[str, Any], *, for_update: bool) -> dict[str, An
                 }
             )
         payload["items"] = normalized_items
+    if ingredient_entries is not None:
+        if not isinstance(ingredient_entries, list):
+            raise click.ClickException("`ingredients` must be a list.")
+        normalized_ingredients: list[dict[str, Any]] = []
+        for ingredient in ingredient_entries:
+            if not isinstance(ingredient, dict):
+                raise click.ClickException("Each recipe ingredient must be an object.")
+            name = str(ingredient.get("name", "")).strip()
+            if not name:
+                raise click.ClickException("Each recipe ingredient requires a non-empty `name`.")
+            normalized_ingredients.append(
+                {
+                    "name": name,
+                    "description": str(ingredient.get("description", "")),
+                    "optional": bool(ingredient.get("optional", True)),
+                }
+            )
+        if "items" in payload:
+            payload["items"].extend(normalized_ingredients)
+        else:
+            payload["items"] = normalized_ingredients
     if "tags" in payload:
         if not isinstance(payload["tags"], list):
             raise click.ClickException("`tags` must be a list.")
@@ -153,6 +188,22 @@ def _print_recipe(recipe: dict[str, Any]) -> None:
     else:
         console.print("items: -")
 
+    ingredients = recipe.get("ingredients", recipe.get("items", []))
+    if ingredients:
+        table = Table(title="Ingredients")
+        table.add_column("Name")
+        table.add_column("Description")
+        table.add_column("Optional")
+        for ingredient in ingredients:
+            table.add_row(
+                str(ingredient.get("name", "-")),
+                str(ingredient.get("description", "")),
+                "yes" if ingredient.get("optional", True) else "no",
+            )
+        console.print(table)
+    else:
+        console.print("ingredients: -")
+
 
 def _build_payload_from_flags(
     *,
@@ -166,8 +217,10 @@ def _build_payload_from_flags(
     visibility: int | None,
     tags: tuple[str, ...],
     items: tuple[str, ...],
+    items_alias: tuple[str, ...],
     clear_tags: bool = False,
     clear_items: bool = False,
+    clear_ingredients: bool = False,
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {}
     if name is not None:
@@ -190,10 +243,16 @@ def _build_payload_from_flags(
         payload["tags"] = []
     elif tags:
         payload["tags"] = list(tags)
-    if clear_items:
+    if clear_items or clear_ingredients:
         payload["items"] = []
-    elif items:
-        payload["items"] = [_parse_item(item) for item in items]
+    else:
+        combined_items: list[dict[str, Any]] = []
+        for item in items:
+            combined_items.append(_parse_item(item))
+        for alias in items_alias:
+            combined_items.append(_parse_item(alias))
+        if combined_items:
+            payload["items"] = combined_items
     return payload
 
 
@@ -271,6 +330,7 @@ def get_recipe(recipe_id: int, as_json: bool) -> None:
 @click.option("--visibility", type=int, help="0=private, 1=link, 2=public.")
 @click.option("--tag", "tags", multiple=True, help="Repeatable recipe tag.")
 @click.option("--item", "items", multiple=True, help="Repeatable: name|description|optional")
+@click.option("--ingredient", "items_alias", multiple=True, help="Alias for --item (backend field: items).")
 @click.option("--from-file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--json", "as_json", is_flag=True, help="Output raw JSON.")
 def add_recipe(
@@ -285,6 +345,7 @@ def add_recipe(
     visibility: int | None,
     tags: tuple[str, ...],
     items: tuple[str, ...],
+    items_alias: tuple[str, ...],
     from_file: Path | None,
     as_json: bool,
 ) -> None:
@@ -306,6 +367,7 @@ def add_recipe(
             visibility=visibility,
             tags=tags,
             items=items,
+            items_alias=items_alias,
         )
         if flagged_payload:
             raw_payload = flagged_payload
@@ -320,6 +382,7 @@ def add_recipe(
                 "visibility": 0,
                 "source": "",
                 "items": [],
+                "ingredients": [],
                 "tags": [],
             }
             edited = click.edit(yaml.safe_dump(template, sort_keys=False))
@@ -356,8 +419,10 @@ def add_recipe(
 @click.option("--visibility", type=int, help="0=private, 1=link, 2=public.")
 @click.option("--tag", "tags", multiple=True, help="Repeatable recipe tag.")
 @click.option("--item", "items", multiple=True, help="Repeatable: name|description|optional")
+@click.option("--ingredient", "items_alias", multiple=True, help="Alias for --item (backend field: items).")
 @click.option("--clear-tags", is_flag=True, help="Clear all tags.")
 @click.option("--clear-items", is_flag=True, help="Clear all items.")
+@click.option("--clear-ingredients", is_flag=True, help="Clear all ingredients.")
 @click.option("--from-file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--json", "as_json", is_flag=True, help="Output raw JSON.")
 def edit_recipe(
@@ -372,8 +437,10 @@ def edit_recipe(
     visibility: int | None,
     tags: tuple[str, ...],
     items: tuple[str, ...],
+    items_alias: tuple[str, ...],
     clear_tags: bool,
     clear_items: bool,
+    clear_ingredients: bool,
     from_file: Path | None,
     as_json: bool,
 ) -> None:
@@ -398,8 +465,10 @@ def edit_recipe(
             visibility=visibility,
             tags=tags,
             items=items,
+            items_alias=items_alias,
             clear_tags=clear_tags,
             clear_items=clear_items,
+            clear_ingredients=clear_ingredients,
         )
         if flagged_payload:
             raw_payload = flagged_payload
