@@ -19,6 +19,24 @@ cd kitchenowl-cli
 python3 -m pip install -e .
 ```
 
+## Publish to PyPI via GitHub Actions
+
+This repository includes `.github/workflows/publish.yml` for Trusted Publishing.
+
+One-time setup:
+- In PyPI, create a Trusted Publisher for this GitHub repository and workflow file.
+- In GitHub, keep the repository public and allow Actions to run.
+
+Release flow:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Then create a GitHub Release for that tag (or publish from the Releases UI).  
+When the release is published, the workflow builds and uploads `kitchenowl-cli` to PyPI.
+
 ## Quick start examples
 
 ```bash
