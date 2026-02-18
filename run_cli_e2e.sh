@@ -47,7 +47,12 @@ if [[ -z "${USERNAME:-}" || -z "${PASSWORD:-}" ]]; then
   usage
 fi
 
-CLI="./.venv/bin/kitchenowl"
+CLI="./.venv/bin/python -m kitchenowl_cli.main"
+SERVER="${SERVER%/}"
+CURL_TIMEOUT=10
+
+# Ensure CLI uses local source tree, not any globally installed package.
+export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
 
 echo "Logging in to $SERVER"
 $CLI auth login --server "$SERVER" --username "$USERNAME" --password "$PASSWORD"
@@ -89,7 +94,7 @@ else:
 PY
 <<<"$ADMIN_JSON")
 echo "Granting admin user $ADMIN_ID admin rights on household $HH_ID"
-curl -sS -X PUT "$SERVER/api/household/$HH_ID/member/$ADMIN_ID" \
+curl -sS --max-time "$CURL_TIMEOUT" -X PUT "$SERVER/api/household/$HH_ID/member/$ADMIN_ID" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"admin":true}' >/tmp/cli_admin_member.json
@@ -109,9 +114,21 @@ RECIPE1_JSON=$($CLI recipe add --household-id "$HH_ID" \
   --time 30 \
   --yields 4 \
   --tag cli \
-  --item "Lettuce|1 head|false" \
+  --item "Prepare dressing|Whisk oil + vinegar|false" \
+  --ingredient "Lettuce|1 head|false" \
+  --ingredient "Olive oil|2 tbsp|false" \
+  --ingredient "Croutons|1 cup|true" \
   --json)
 RECIPE1_ID=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["id"])' "$RECIPE1_JSON")
+RECIPE1_GET_JSON=$($CLI recipe get "$RECIPE1_ID" --json)
+python3 - <<'PY' "$RECIPE1_GET_JSON"
+import json,sys
+r=json.loads(sys.argv[1])
+ing=r.get("items", r.get("ingredients", []))
+assert any(i.get("name") == "Lettuce" and i.get("optional") is False for i in ing), "Missing required ingredient"
+assert any(i.get("name") == "Croutons" and i.get("optional") is True for i in ing), "Missing optional ingredient"
+print("Verified flag-based recipe ingredients via recipe get (required + optional)")
+PY
 echo "Created recipe #$RECIPE1_ID"
 
 cat <<'EOF' >/tmp/run_cli_recipe.yml
@@ -123,9 +140,16 @@ prep_time: 10
 yields: 6
 visibility: 0
 items:
+  - name: Chop vegetables
+    description: Fine dice
+    optional: false
+ingredients:
   - name: Tomato
     description: 3
     optional: false
+  - name: Chili flakes
+    description: pinch
+    optional: true
 tags:
   - file
   - cli
@@ -133,6 +157,15 @@ EOF
 
 RECIPE2_JSON=$($CLI recipe add --household-id "$HH_ID" --from-file /tmp/run_cli_recipe.yml --json)
 RECIPE2_ID=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["id"])' "$RECIPE2_JSON")
+RECIPE2_GET_JSON=$($CLI recipe get "$RECIPE2_ID" --json)
+python3 - <<'PY' "$RECIPE2_GET_JSON"
+import json,sys
+r=json.loads(sys.argv[1])
+ing=r.get("items", r.get("ingredients", []))
+assert any(i.get("name") == "Tomato" and i.get("optional") is False for i in ing), "Missing required file ingredient"
+assert any(i.get("name") == "Chili flakes" and i.get("optional") is True for i in ing), "Missing optional file ingredient"
+print("Verified file-based recipe ingredients via recipe get (required + optional)")
+PY
 echo "Created recipe #$RECIPE2_ID from file"
 
 TOKEN_DATA=$(python3 - <<'PY'
@@ -147,7 +180,7 @@ PY
 )
 ACCESS_TOKEN=$(printf "%s\n" "$TOKEN_DATA" | sed -n '1p')
 USER_ID=$(printf "%s\n" "$TOKEN_DATA" | sed -n '2p')
-CURL_OPTS=(-sS -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json")
+CURL_OPTS=(-sS --max-time "$CURL_TIMEOUT" -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json")
 DATE_MS=$(( $(date +%s) * 1000 ))
 
 curl "${CURL_OPTS[@]}" -X POST "$SERVER/api/household/$HH_ID/planner/recipe" \
