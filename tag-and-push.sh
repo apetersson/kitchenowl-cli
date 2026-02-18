@@ -106,7 +106,7 @@ SCHEMA_FILES=(
 git add "${SCHEMA_FILES[@]}"
 commit_message="chore: bump kitchenowl-cli to $new_version"
 git commit -m "$commit_message"
-tag_name="kitchenowl-cli-v$new_version"
+tag_name="v$new_version"
 git tag -a "$tag_name" -m "Release kitchenowl-cli $new_version"
 git push origin HEAD
 git push origin "$tag_name"
