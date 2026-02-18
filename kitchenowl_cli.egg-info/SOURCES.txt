@@ -15,3 +15,7 @@ kitchenowl_cli/commands/auth.py
 kitchenowl_cli/commands/config_cmd.py
 kitchenowl_cli/commands/household.py
 kitchenowl_cli/commands/recipe.py
+kitchenowl_cli/commands/shoppinglist.py
+kitchenowl_cli/commands/user.py
+tests/test_api_helpers.py
+tests/test_recipe_helpers.py
