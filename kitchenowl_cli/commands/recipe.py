@@ -243,16 +243,16 @@ def _build_payload_from_flags(
         payload["tags"] = []
     elif tags:
         payload["tags"] = list(tags)
-    if clear_items or clear_ingredients:
+    should_clear_items = clear_items or clear_ingredients
+    combined_items: list[dict[str, Any]] = []
+    for item in items:
+        combined_items.append(_parse_item(item))
+    for alias in items_alias:
+        combined_items.append(_parse_item(alias))
+    if combined_items:
+        payload["items"] = combined_items
+    elif should_clear_items:
         payload["items"] = []
-    else:
-        combined_items: list[dict[str, Any]] = []
-        for item in items:
-            combined_items.append(_parse_item(item))
-        for alias in items_alias:
-            combined_items.append(_parse_item(alias))
-        if combined_items:
-            payload["items"] = combined_items
     return payload
 
 
