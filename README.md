@@ -12,7 +12,21 @@ Command-line client for KitchenOwl's `/api` endpoints, covering auth, household,
 - `kitchenowl user [list|get|search|create|update|delete]` for admins.
 - `run_cli_e2e.sh` script exercises login, household creation, lists, recipes, planner, expenses, and optionally house cleanup.
 
-## Quick install
+## Install
+
+Recommended for normal usage (installs globally via `pipx`):
+
+```bash
+pipx install kitchenowl-cli
+```
+
+The installed command is:
+
+```bash
+kitchenowl --help
+```
+
+For local development / modifying this CLI:
 
 ```bash
 cd kitchenowl-cli
@@ -30,8 +44,8 @@ One-time setup:
 Release flow:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 Then create a GitHub Release for that tag (or publish from the Releases UI).  
