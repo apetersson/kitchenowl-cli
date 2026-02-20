@@ -366,7 +366,7 @@ def search_recipes_by_tag(
     language: str | None,
     as_json: bool,
 ) -> None:
-    """Search public recipes by tag."""
+    """Search recipes by tag."""
     cfg = load_config()
     params: dict[str, Any] = {"tag": tag, "page": page}
     if language:
