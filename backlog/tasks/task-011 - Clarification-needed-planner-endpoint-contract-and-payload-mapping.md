@@ -1,10 +1,11 @@
 ---
 id: TASK-011
 title: 'Clarification-needed: planner endpoint contract and payload mapping'
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@codex'
 created_date: '2026-02-20 12:34'
-updated_date: '2026-02-20 12:44'
+updated_date: '2026-02-20 12:48'
 labels:
   - clarification-needed
   - api-contract
@@ -32,4 +33,6 @@ priority: medium
 - Implemented planner baseline using /api/household/{hid}/planner, /planner/recipe, /planner/recipe/{id}, /planner/recent-recipes[/page], /planner/suggested-recipes[/page], and /planner/refresh-suggested-recipes.
 - Deferred /planner/recipes endpoint exposure; created baseline without it to keep command surface minimal.
 - Deferred legacy day-based flags; baseline currently supports --date (YYYY-MM-DD) only.
+
+Status updated to In Progress after initial endpoint mapping and ambiguity capture.
 <!-- SECTION:NOTES:END -->

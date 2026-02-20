@@ -1,10 +1,11 @@
 ---
 id: TASK-013
 title: 'Clarification-needed: shopping list deletion API compatibility strategy'
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@codex'
 created_date: '2026-02-20 12:34'
-updated_date: '2026-02-20 12:41'
+updated_date: '2026-02-20 12:48'
 labels:
   - clarification-needed
   - api-contract
@@ -28,4 +29,6 @@ priority: medium
 - Open question: does every supported deployment preserve DELETE request body reliably for shopping item removal?
 - Open question: should CLI introduce path/query fallback logic while preserving current endpoint behavior?
 - Open question: define migration plan for single remove-item and future bulk remove-items commands.
+
+Status updated to In Progress while assessing DELETE-with-body compatibility strategy.
 <!-- SECTION:NOTES:END -->
