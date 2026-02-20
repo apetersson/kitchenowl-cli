@@ -4,7 +4,7 @@ title: 'Clarification-needed: planner endpoint contract and payload mapping'
 status: To Do
 assignee: []
 created_date: '2026-02-20 12:34'
-updated_date: '2026-02-20 12:41'
+updated_date: '2026-02-20 12:44'
 labels:
   - clarification-needed
   - api-contract
@@ -28,4 +28,8 @@ priority: medium
 - Open question: should CLI expose /api/household/{hid}/planner/recipes in addition to planner list endpoint?
 - Open question: should we support legacy --day flags or only --cooking-date for planner operations?
 - Open question: confirm whether refresh-suggested-recipes endpoint is stable across supported server versions.
+
+- Implemented planner baseline using /api/household/{hid}/planner, /planner/recipe, /planner/recipe/{id}, /planner/recent-recipes[/page], /planner/suggested-recipes[/page], and /planner/refresh-suggested-recipes.
+- Deferred /planner/recipes endpoint exposure; created baseline without it to keep command surface minimal.
+- Deferred legacy day-based flags; baseline currently supports --date (YYYY-MM-DD) only.
 <!-- SECTION:NOTES:END -->

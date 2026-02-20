@@ -210,6 +210,29 @@ def _print_recipe(recipe: dict[str, Any]) -> None:
         console.print("ingredients: -")
 
 
+def _print_recipe_list(recipes: list[dict[str, Any]], title: str) -> None:
+    table = Table(title=title)
+    table.add_column("ID", justify="right")
+    table.add_column("Name")
+    table.add_column("Yields", justify="right")
+    table.add_column("Time", justify="right")
+    table.add_column("Tags")
+    table.add_column("Items", justify="right")
+
+    for r in recipes:
+        tags = r.get("tags", [])
+        tag_names = [t.get("name", "-") if isinstance(t, dict) else str(t) for t in tags]
+        table.add_row(
+            str(r.get("id", "-")),
+            str(r.get("name", "-")),
+            str(r.get("yields", "-")),
+            str(r.get("time", "-")),
+            ", ".join(tag_names[:3]),
+            str(len(r.get("items", []))),
+        )
+    console.print(table)
+
+
 def _build_payload_from_flags(
     *,
     name: str | None,
@@ -283,26 +306,87 @@ def list_recipes(household_id: int | None, as_json: bool) -> None:
         click.echo(json.dumps(recipes, indent=2, sort_keys=True))
         return
 
-    table = Table(title=f"Recipes (household {hid})")
-    table.add_column("ID", justify="right")
-    table.add_column("Name")
-    table.add_column("Yields", justify="right")
-    table.add_column("Time", justify="right")
-    table.add_column("Tags")
-    table.add_column("Items", justify="right")
+    _print_recipe_list(recipes, f"Recipes (household {hid})")
 
-    for r in recipes:
-        tags = r.get("tags", [])
-        tag_names = [t.get("name", "-") if isinstance(t, dict) else str(t) for t in tags]
-        table.add_row(
-            str(r.get("id", "-")),
-            str(r.get("name", "-")),
-            str(r.get("yields", "-")),
-            str(r.get("time", "-")),
-            ", ".join(tag_names[:3]),
-            str(len(r.get("items", []))),
-        )
-    console.print(table)
+
+@recipe.command("search")
+@click.option("--household-id", type=int, help="Override configured default household.")
+@click.option("--query", required=True, help="Recipe name query.")
+@click.option("--page", type=int, default=0, show_default=True, help="Page index.")
+@click.option("--language", help="Optional language filter.")
+@click.option("--only-ids", is_flag=True, help="Return only recipe IDs when supported.")
+@click.option("--json", "as_json", is_flag=True, help="Output raw JSON.")
+def search_recipes(
+    household_id: int | None,
+    query: str,
+    page: int,
+    language: str | None,
+    only_ids: bool,
+    as_json: bool,
+) -> None:
+    """Search recipes by name in a household."""
+    cfg = load_config()
+    hid = _household_id(cfg, household_id)
+    params: dict[str, Any] = {"query": query, "page": page, "only_ids": only_ids}
+    if language:
+        params["language"] = language
+
+    try:
+        client = ApiClient(cfg)
+        recipes = client.get(f"/api/household/{hid}/recipe/search", params=params)
+    except ApiError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if as_json:
+        click.echo(json.dumps(recipes, indent=2, sort_keys=True))
+        return
+
+    if only_ids:
+        if recipes:
+            console.print(", ".join(str(recipe_id) for recipe_id in recipes))
+        else:
+            console.print("No recipes found.")
+        return
+
+    if not recipes:
+        console.print("No recipes found.")
+        return
+
+    _print_recipe_list(recipes, f"Recipe Search (household {hid})")
+
+
+@recipe.command("search-by-tag")
+@click.option("--tag", required=True, help="Tag to search for.")
+@click.option("--page", type=int, default=0, show_default=True, help="Page index.")
+@click.option("--language", help="Optional language filter.")
+@click.option("--json", "as_json", is_flag=True, help="Output raw JSON.")
+def search_recipes_by_tag(
+    tag: str,
+    page: int,
+    language: str | None,
+    as_json: bool,
+) -> None:
+    """Search public recipes by tag."""
+    cfg = load_config()
+    params: dict[str, Any] = {"tag": tag, "page": page}
+    if language:
+        params["language"] = language
+
+    try:
+        client = ApiClient(cfg)
+        recipes = client.get("/api/recipe/search-tag", params=params)
+    except ApiError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if as_json:
+        click.echo(json.dumps(recipes, indent=2, sort_keys=True))
+        return
+
+    if not recipes:
+        console.print("No recipes found.")
+        return
+
+    _print_recipe_list(recipes, "Recipe Search by Tag")
 
 
 @recipe.command("get")
