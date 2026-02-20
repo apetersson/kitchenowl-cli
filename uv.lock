@@ -157,20 +157,25 @@ version = "0.1.7"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
-    { name = "pytest" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "rich" },
 ]
 
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
-    { name = "pytest", specifier = ">=8.1.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.1.0" },
     { name = "pyyaml", specifier = ">=6.0.1" },
     { name = "requests", specifier = ">=2.31.0" },
     { name = "rich", specifier = ">=13.7.1" },
 ]
+provides-extras = ["dev"]
 
 [[package]]
 name = "markdown-it-py"

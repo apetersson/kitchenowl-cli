@@ -6,7 +6,7 @@ from typing import Any
 import requests
 from requests import RequestException
 
-from .config import save_config
+from .config import config_lock, load_config, save_config
 
 
 def normalize_server_url(url: str) -> str:
@@ -65,26 +65,38 @@ class ApiClient:
         return {"Authorization": f"Bearer {token}"}
 
     def refresh_tokens(self) -> None:
-        headers = self._auth_header("refresh_token")
-        try:
-            response = self.session.get(
-                self._url("/api/auth/refresh"),
-                headers=headers,
-                timeout=30,
-            )
-        except RequestException as exc:
-            raise ApiError(f"Token refresh failed: {exc}") from exc
-        if not response.ok:
-            raise ApiError(
-                f"Token refresh failed: {_extract_error(response)}",
-                response.status_code,
-            )
-        payload = response.json()
-        self.config["access_token"] = payload["access_token"]
-        self.config["refresh_token"] = payload["refresh_token"]
-        if "user" in payload:
-            self.config["user"] = payload["user"]
-        save_config(self.config)
+        with config_lock():
+            latest_config = load_config()
+            if latest_config.get("refresh_token"):
+                self.config["refresh_token"] = latest_config["refresh_token"]
+            if latest_config.get("access_token"):
+                self.config["access_token"] = latest_config["access_token"]
+            if latest_config.get("user"):
+                self.config["user"] = latest_config["user"]
+            if latest_config.get("server_url"):
+                self.config["server_url"] = latest_config["server_url"]
+                self.server_url = normalize_server_url(latest_config["server_url"])
+
+            headers = self._auth_header("refresh_token")
+            try:
+                response = self.session.get(
+                    self._url("/api/auth/refresh"),
+                    headers=headers,
+                    timeout=30,
+                )
+            except RequestException as exc:
+                raise ApiError(f"Token refresh failed: {exc}") from exc
+            if not response.ok:
+                raise ApiError(
+                    f"Token refresh failed: {_extract_error(response)}",
+                    response.status_code,
+                )
+            payload = response.json()
+            self.config["access_token"] = payload["access_token"]
+            self.config["refresh_token"] = payload["refresh_token"]
+            if "user" in payload:
+                self.config["user"] = payload["user"]
+            save_config(self.config, already_locked=True)
 
     def request(
         self,

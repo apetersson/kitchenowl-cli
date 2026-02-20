@@ -1,5 +1,6 @@
 import requests
 import pytest
+from contextlib import contextmanager
 
 from kitchenowl_cli.api import ApiClient, ApiError, _extract_error, login, normalize_server_url, signup
 
@@ -90,3 +91,33 @@ def test_signup_transport_error_wrapped(monkeypatch):
 
     with pytest.raises(ApiError, match="Signup failed"):
         signup("https://example.com", "user", "pass", "User")
+
+
+def test_refresh_tokens_uses_latest_refresh_token(monkeypatch):
+    seen_headers: dict[str, str] = {}
+
+    class Session:
+        def get(self, url, headers=None, timeout=None):
+            seen_headers["Authorization"] = headers["Authorization"]
+            return DummyResponse(
+                json_data={"access_token": "new-access", "refresh_token": "new-refresh"},
+                text='{"access_token":"new-access","refresh_token":"new-refresh"}',
+                status_code=200,
+                ok=True,
+            )
+
+    @contextmanager
+    def no_op_lock():
+        yield
+
+    client = ApiClient({"server_url": "https://example.com", "refresh_token": "stale"})
+    client.session = Session()
+    monkeypatch.setattr("kitchenowl_cli.api.load_config", lambda: {"refresh_token": "fresh"})
+    monkeypatch.setattr("kitchenowl_cli.api.config_lock", no_op_lock)
+    monkeypatch.setattr("kitchenowl_cli.api.save_config", lambda cfg, already_locked=False: None)
+
+    client.refresh_tokens()
+
+    assert seen_headers["Authorization"] == "Bearer fresh"
+    assert client.config["access_token"] == "new-access"
+    assert client.config["refresh_token"] == "new-refresh"

@@ -13,6 +13,10 @@ dependencies = [
   "requests>=2.31.0",
   "PyYAML>=6.0.1",
   "rich>=13.7.1",
+]
+
+[project.optional-dependencies]
+dev = [
   "pytest>=8.1.0",
 ]
 
