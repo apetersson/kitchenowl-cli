@@ -80,19 +80,22 @@ ADMIN_ID=$(python3 - <<'PY'
 import json,sys
 data=sys.stdin.read().strip()
 if not data:
-    print("1")
-    sys.exit(0)
+    sys.exit(1)
 try:
     users=json.loads(data)
 except Exception:
-    print("1")
+    sys.exit(1)
 else:
     if isinstance(users, list) and users:
         print(users[0]["id"])
     else:
-        print("1")
+        sys.exit(1)
 PY
-<<<"$ADMIN_JSON")
+<<<"$ADMIN_JSON" || true)
+if [[ -z "${ADMIN_ID:-}" ]]; then
+  echo "ERROR: Could not resolve an admin user id. Ensure an admin account exists and user search is allowed." >&2
+  exit 1
+fi
 echo "Granting admin user $ADMIN_ID admin rights on household $HH_ID"
 curl -sS --max-time "$CURL_TIMEOUT" -X PUT "$SERVER/api/household/$HH_ID/member/$ADMIN_ID" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \

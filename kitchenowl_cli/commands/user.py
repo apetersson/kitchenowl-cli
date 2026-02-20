@@ -16,7 +16,11 @@ console = Console()
 
 def _client_and_config() -> tuple[ApiClient, dict[str, Any]]:
     cfg = load_config()
-    return ApiClient(cfg), cfg
+    try:
+        client = ApiClient(cfg)
+    except ApiError as exc:
+        raise click.ClickException(str(exc)) from exc
+    return client, cfg
 
 
 @click.group("user")
@@ -127,7 +131,14 @@ def create_user(username: str, name: str, password: str, email: str | None, as_j
         click.echo(json.dumps(data, indent=2, sort_keys=True))
         return
 
-    console.print(f"[green]Created user {data.get('id')} ({data.get('username')}).[/green]")
+    created_id = data.get("id")
+    created_username = data.get("username")
+    if created_id is not None and created_username:
+        console.print(f"[green]Created user {created_id} ({created_username}).[/green]")
+    elif created_username:
+        console.print(f"[green]Created user {created_username}.[/green]")
+    else:
+        console.print("[green]Created user.[/green]")
 
 
 @user.command("update")

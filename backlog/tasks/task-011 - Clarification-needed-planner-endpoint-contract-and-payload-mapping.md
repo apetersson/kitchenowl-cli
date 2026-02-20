@@ -1,0 +1,31 @@
+---
+id: TASK-011
+title: 'Clarification-needed: planner endpoint contract and payload mapping'
+status: To Do
+assignee: []
+created_date: '2026-02-20 12:34'
+updated_date: '2026-02-20 12:41'
+labels:
+  - clarification-needed
+  - api-contract
+dependencies:
+  - TASK-008
+references:
+  - ../feedback-zai.txt
+priority: medium
+---
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Document exact planner endpoint paths/methods and required payload fields for all planned CLI commands
+- [ ] #2 Capture any server-version differences and fallback behavior in notes/docs
+- [ ] #3 If ambiguities remain, record them as follow-up tasks without blocking stable commands
+<!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+- Open question: should CLI expose /api/household/{hid}/planner/recipes in addition to planner list endpoint?
+- Open question: should we support legacy --day flags or only --cooking-date for planner operations?
+- Open question: confirm whether refresh-suggested-recipes endpoint is stable across supported server versions.
+<!-- SECTION:NOTES:END -->

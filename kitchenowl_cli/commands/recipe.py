@@ -86,14 +86,17 @@ def _editable_recipe(recipe: dict[str, Any]) -> dict[str, Any]:
         }
         for item in recipe.get("items", [])
     ]
-    data["ingredients"] = [
-        {
-            "name": ingredient.get("name", ""),
-            "description": ingredient.get("description", ""),
-            "optional": ingredient.get("optional", True),
-        }
-        for ingredient in recipe.get("ingredients", recipe.get("items", []))
-    ]
+    if isinstance(recipe.get("ingredients"), list):
+        data["ingredients"] = [
+            {
+                "name": ingredient.get("name", ""),
+                "description": ingredient.get("description", ""),
+                "optional": ingredient.get("optional", True),
+            }
+            for ingredient in recipe.get("ingredients", [])
+        ]
+    else:
+        data["ingredients"] = []
     data["tags"] = [tag["name"] if isinstance(tag, dict) else tag for tag in recipe.get("tags", [])]
     return data
 
@@ -138,8 +141,10 @@ def _normalize_payload(raw: dict[str, Any], *, for_update: bool) -> dict[str, An
                     "optional": bool(ingredient.get("optional", True)),
                 }
             )
-        if "items" in payload:
-            payload["items"].extend(normalized_ingredients)
+        has_items = "items" in payload and len(payload["items"]) > 0
+        # Keep legacy `ingredients` compatibility without overwriting explicit `items`.
+        if has_items:
+            pass
         else:
             payload["items"] = normalized_ingredients
     if "tags" in payload:
@@ -188,7 +193,7 @@ def _print_recipe(recipe: dict[str, Any]) -> None:
     else:
         console.print("items: -")
 
-    ingredients = recipe.get("ingredients", recipe.get("items", []))
+    ingredients = recipe.get("ingredients")
     if ingredients:
         table = Table(title="Ingredients")
         table.add_column("Name")
@@ -327,7 +332,7 @@ def get_recipe(recipe_id: int, as_json: bool) -> None:
 @click.option("--prep-time", type=int)
 @click.option("--yields", "yields_value", type=int)
 @click.option("--source")
-@click.option("--visibility", type=int, help="0=private, 1=link, 2=public.")
+@click.option("--visibility", type=click.IntRange(0, 2), help="0=private, 1=link, 2=public.")
 @click.option("--tag", "tags", multiple=True, help="Repeatable recipe tag.")
 @click.option("--item", "items", multiple=True, help="Repeatable: name|description|optional")
 @click.option("--ingredient", "items_alias", multiple=True, help="Alias for --item (backend field: items).")
@@ -416,7 +421,7 @@ def add_recipe(
 @click.option("--prep-time", type=int)
 @click.option("--yields", "yields_value", type=int)
 @click.option("--source")
-@click.option("--visibility", type=int, help="0=private, 1=link, 2=public.")
+@click.option("--visibility", type=click.IntRange(0, 2), help="0=private, 1=link, 2=public.")
 @click.option("--tag", "tags", multiple=True, help="Repeatable recipe tag.")
 @click.option("--item", "items", multiple=True, help="Repeatable: name|description|optional")
 @click.option("--ingredient", "items_alias", multiple=True, help="Alias for --item (backend field: items).")
