@@ -124,7 +124,7 @@ tags:
 
 ## What’s not implemented yet
 
-- Planner CLI commands (beyond the end-to-end script that calls `/planner/recipe`).  
-- Expense management (create/edit/delete categories or entries) via CLI wrappers.  
-- Shopping list item bulk operations (remove multiple items at once) and the planner suggestion refresh endpoints.  
-- More advanced user workflows (password resets, token management, server admin tooling) are still API-only.
+- Expense management via CLI wrappers (entries, categories, overview/balance).  
+- Shopping list bulk operations (`clear`, multi-remove, file-based bulk add).  
+- Dedicated category/tag discovery and management commands beyond current recipe/tag usage flows.  
+- More advanced auth/admin workflows (OIDC login, password reset/email verification, token management, deeper server admin tooling) are still API-only.
