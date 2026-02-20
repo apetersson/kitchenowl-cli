@@ -44,7 +44,7 @@ def _bulk_remove_items(
         return False
     except ApiError as exc:
         # Some proxies strip DELETE request bodies. Fallback to legacy single-item DELETE.
-        if exc.status_code not in {400, 405, 411, 415, 422, 501}:
+        if exc.status_code not in {405, 411, 415, 501}:
             raise
         for item_payload in items_payload:
             client.delete(f"/api/shoppinglist/{list_id}/item", json=item_payload)

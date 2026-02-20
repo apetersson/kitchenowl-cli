@@ -73,9 +73,6 @@ class ApiClient:
                 self.config["access_token"] = latest_config["access_token"]
             if latest_config.get("user"):
                 self.config["user"] = latest_config["user"]
-            if latest_config.get("server_url"):
-                self.config["server_url"] = latest_config["server_url"]
-                self.server_url = normalize_server_url(latest_config["server_url"])
 
             headers = self._auth_header("refresh_token")
             try:

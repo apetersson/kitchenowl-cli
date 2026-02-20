@@ -112,7 +112,10 @@ def test_refresh_tokens_uses_latest_refresh_token(monkeypatch):
 
     client = ApiClient({"server_url": "https://example.com", "refresh_token": "stale"})
     client.session = Session()
-    monkeypatch.setattr("kitchenowl_cli.api.load_config", lambda: {"refresh_token": "fresh"})
+    monkeypatch.setattr(
+        "kitchenowl_cli.api.load_config",
+        lambda: {"refresh_token": "fresh", "server_url": "https://other.example.com"},
+    )
     monkeypatch.setattr("kitchenowl_cli.api.config_lock", no_op_lock)
     monkeypatch.setattr("kitchenowl_cli.api.save_config", lambda cfg, already_locked=False: None)
 
@@ -121,3 +124,4 @@ def test_refresh_tokens_uses_latest_refresh_token(monkeypatch):
     assert seen_headers["Authorization"] == "Bearer fresh"
     assert client.config["access_token"] == "new-access"
     assert client.config["refresh_token"] == "new-refresh"
+    assert client.server_url == "https://example.com"
