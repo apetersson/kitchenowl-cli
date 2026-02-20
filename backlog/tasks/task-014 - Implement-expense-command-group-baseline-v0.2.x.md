@@ -4,13 +4,12 @@ title: Implement expense command group baseline (v0.2.x)
 status: To Do
 assignee: []
 created_date: '2026-02-20 12:34'
+updated_date: '2026-02-20 12:56'
 labels:
   - feature
   - v0.2.x
 dependencies:
   - TASK-012
-  - TASK-002
-  - TASK-003
 references:
   - ../v0.2-planning.md
 priority: medium

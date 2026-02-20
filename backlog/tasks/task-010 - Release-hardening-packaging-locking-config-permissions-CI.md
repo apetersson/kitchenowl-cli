@@ -4,16 +4,11 @@ title: 'Release hardening: packaging, locking, config permissions, CI'
 status: To Do
 assignee: []
 created_date: '2026-02-20 12:34'
+updated_date: '2026-02-20 12:56'
 labels:
   - hardening
   - v0.2
-dependencies:
-  - TASK-002
-  - TASK-003
-  - TASK-004
-  - TASK-005
-  - TASK-006
-  - TASK-007
+dependencies: []
 references:
   - pyproject.toml
   - kitchenowl_cli/config.py

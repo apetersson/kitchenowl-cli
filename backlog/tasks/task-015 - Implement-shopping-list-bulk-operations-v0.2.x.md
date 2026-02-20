@@ -4,12 +4,12 @@ title: Implement shopping list bulk operations (v0.2.x)
 status: To Do
 assignee: []
 created_date: '2026-02-20 12:34'
+updated_date: '2026-02-20 12:56'
 labels:
   - feature
   - v0.2.x
 dependencies:
   - TASK-013
-  - TASK-002
 references:
   - kitchenowl_cli/commands/shoppinglist.py
 priority: medium

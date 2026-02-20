@@ -4,12 +4,11 @@ title: Add category and tag discovery commands
 status: To Do
 assignee: []
 created_date: '2026-02-20 12:35'
+updated_date: '2026-02-20 12:56'
 labels:
   - feature
   - v0.2.x
-dependencies:
-  - TASK-002
-  - TASK-003
+dependencies: []
 references:
   - ../feedback-zai.txt
 priority: medium

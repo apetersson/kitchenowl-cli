@@ -5,12 +5,11 @@ status: In Progress
 assignee:
   - '@codex'
 created_date: '2026-02-20 12:34'
-updated_date: '2026-02-20 12:48'
+updated_date: '2026-02-20 12:56'
 labels:
   - clarification-needed
   - api-contract
-dependencies:
-  - TASK-008
+dependencies: []
 references:
   - ../feedback-zai.txt
 priority: medium

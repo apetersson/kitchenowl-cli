@@ -5,12 +5,11 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-02-20 12:33'
-updated_date: '2026-02-20 12:40'
+updated_date: '2026-02-20 12:56'
 labels:
   - blocker
   - v0.2
-dependencies:
-  - TASK-001
+dependencies: []
 references:
   - kitchenowl_cli/commands/auth.py
 priority: high

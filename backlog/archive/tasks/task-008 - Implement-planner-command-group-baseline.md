@@ -5,13 +5,11 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-02-20 12:34'
-updated_date: '2026-02-20 12:44'
+updated_date: '2026-02-20 12:56'
 labels:
   - feature
   - v0.2
-dependencies:
-  - TASK-002
-  - TASK-003
+dependencies: []
 references:
   - ../v0.2-planning.md
 priority: high
