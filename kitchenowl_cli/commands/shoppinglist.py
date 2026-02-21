@@ -55,9 +55,17 @@ def _load_bulk_items_file(path: Path) -> list[dict[str, str]]:
     content = path.read_text(encoding="utf-8")
     parsed: Any
     if path.suffix.lower() == ".json":
-        parsed = json.loads(content)
+        try:
+            parsed = json.loads(content)
+        except json.JSONDecodeError as exc:
+            raise click.ClickException(
+                f"Invalid JSON in {path}: {exc.msg} (line {exc.lineno}, column {exc.colno})."
+            ) from exc
     elif path.suffix.lower() in {".yml", ".yaml"}:
-        parsed = yaml.safe_load(content)
+        try:
+            parsed = yaml.safe_load(content)
+        except yaml.YAMLError as exc:
+            raise click.ClickException(f"Invalid YAML in {path}: {exc}") from exc
     else:
         parsed = [line.strip() for line in content.splitlines() if line.strip() and not line.strip().startswith("#")]
 

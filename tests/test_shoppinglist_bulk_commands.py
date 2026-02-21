@@ -106,3 +106,25 @@ def test_add_items_from_file_parses_json_entries(tmp_path, monkeypatch):
     shopping_mod.add_items_from_file.callback(6, Path(file_path), False)
 
     assert payloads == [{"name": "Milk"}, {"name": "Bread", "description": "Whole grain"}]
+
+
+def test_add_items_from_file_reports_invalid_json_as_click_error(tmp_path):
+    file_path = tmp_path / "items.json"
+    file_path.write_text('["Milk",}', encoding="utf-8")
+
+    try:
+        shopping_mod._load_bulk_items_file(file_path)
+        raise AssertionError("Expected ClickException")
+    except click.ClickException as exc:
+        assert f"Invalid JSON in {file_path}:" in str(exc)
+
+
+def test_add_items_from_file_reports_invalid_yaml_as_click_error(tmp_path):
+    file_path = tmp_path / "items.yaml"
+    file_path.write_text("name: [unclosed", encoding="utf-8")
+
+    try:
+        shopping_mod._load_bulk_items_file(file_path)
+        raise AssertionError("Expected ClickException")
+    except click.ClickException as exc:
+        assert f"Invalid YAML in {file_path}:" in str(exc)
