@@ -142,9 +142,9 @@ def _normalize_payload(raw: dict[str, Any], *, for_update: bool) -> dict[str, An
                 }
             )
         has_items = "items" in payload and len(payload["items"]) > 0
-        # Keep legacy `ingredients` compatibility without overwriting explicit `items`.
+        # Backend only accepts `items`; preserve user-provided `ingredients` by merging.
         if has_items:
-            pass
+            payload["items"].extend(normalized_ingredients)
         else:
             payload["items"] = normalized_ingredients
     if "tags" in payload:

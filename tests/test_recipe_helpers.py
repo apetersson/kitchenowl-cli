@@ -43,7 +43,7 @@ def test_parse_ingredient_invalid():
         _parse_ingredient("|missingname")
 
 
-def test_normalize_payload_prefers_items_when_both_present_for_update():
+def test_normalize_payload_preserves_items_and_ingredients_when_both_present():
     payload = _normalize_payload(
         {
             "items": [{"name": "Edited step", "description": "updated", "optional": False}],
@@ -52,7 +52,10 @@ def test_normalize_payload_prefers_items_when_both_present_for_update():
         for_update=True,
     )
 
-    assert payload["items"] == [{"name": "Edited step", "description": "updated", "optional": False}]
+    assert payload["items"] == [
+        {"name": "Edited step", "description": "updated", "optional": False},
+        {"name": "Stale ingredient", "description": "old", "optional": True},
+    ]
 
 
 def test_normalize_payload_uses_ingredients_when_items_missing():
