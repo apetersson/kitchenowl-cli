@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 import click
+import yaml
 from rich.console import Console
 from rich.table import Table
 
@@ -30,6 +32,61 @@ def _resolve_household(cfg: dict[str, Any], household_id: int | None) -> int:
     if not target:
         raise click.ClickException("No household selected; provide --household-id or set a default.")
     return int(target)
+
+
+def _bulk_remove_items(
+    client: ApiClient,
+    list_id: int,
+    items_payload: list[dict[str, int]],
+) -> bool:
+    try:
+        client.delete(f"/api/shoppinglist/{list_id}/items", json={"items": items_payload})
+        return False
+    except ApiError as exc:
+        # Some proxies strip DELETE request bodies. Fallback to legacy single-item DELETE.
+        if exc.status_code not in {405, 411, 415, 501}:
+            raise
+        for item_payload in items_payload:
+            client.delete(f"/api/shoppinglist/{list_id}/item", json=item_payload)
+        return True
+
+
+def _load_bulk_items_file(path: Path) -> list[dict[str, str]]:
+    content = path.read_text(encoding="utf-8")
+    parsed: Any
+    if path.suffix.lower() == ".json":
+        try:
+            parsed = json.loads(content)
+        except json.JSONDecodeError as exc:
+            raise click.ClickException(
+                f"Invalid JSON in {path}: {exc.msg} (line {exc.lineno}, column {exc.colno})."
+            ) from exc
+    elif path.suffix.lower() in {".yml", ".yaml"}:
+        try:
+            parsed = yaml.safe_load(content)
+        except yaml.YAMLError as exc:
+            raise click.ClickException(f"Invalid YAML in {path}: {exc}") from exc
+    else:
+        parsed = [line.strip() for line in content.splitlines() if line.strip() and not line.strip().startswith("#")]
+
+    if not isinstance(parsed, list):
+        raise click.ClickException("Bulk items file must contain a list of strings or objects.")
+
+    normalized: list[dict[str, str]] = []
+    for entry in parsed:
+        if isinstance(entry, str):
+            normalized.append({"name": entry})
+        elif isinstance(entry, dict):
+            name = str(entry.get("name", "")).strip()
+            if not name:
+                raise click.ClickException("Each bulk item object requires a non-empty `name`.")
+            payload: dict[str, str] = {"name": name}
+            if "description" in entry and entry["description"] is not None:
+                payload["description"] = str(entry["description"])
+            normalized.append(payload)
+        else:
+            raise click.ClickException("Bulk items list entries must be strings or objects.")
+    return normalized
 
 
 @click.group()
@@ -246,3 +303,118 @@ def remove_item(list_id: int, item_id: int, removed_at: int, yes: bool) -> None:
         raise click.ClickException(str(exc)) from exc
 
     console.print(f"[green]Marked item {item_id} as done on list {list_id}.[/green]")
+
+
+@shoppinglist.command("remove-items")
+@click.argument("list_id", type=int)
+@click.argument("item_ids", nargs=-1, type=int)
+@click.option("--removed-at", type=int, default=0, help="Timestamp in milliseconds to record removal.")
+@click.option("-y", "--yes", is_flag=True, help="Skip confirmation.")
+@click.option("--json", "as_json", is_flag=True, help="Output raw JSON.")
+def remove_items(list_id: int, item_ids: tuple[int, ...], removed_at: int, yes: bool, as_json: bool) -> None:
+    """Remove multiple items from the shopping list."""
+    if not item_ids:
+        raise click.ClickException("Provide at least one item ID.")
+    if not yes and not click.confirm(f"Remove {len(item_ids)} items from list {list_id}?", default=False):
+        raise click.ClickException("Aborted.")
+
+    payload_items: list[dict[str, int]] = []
+    for item_id in item_ids:
+        entry: dict[str, int] = {"item_id": item_id}
+        if removed_at > 0:
+            entry["removed_at"] = removed_at
+        payload_items.append(entry)
+
+    client, _ = _client_and_config()
+    try:
+        used_fallback = _bulk_remove_items(client, list_id, payload_items)
+    except ApiError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if as_json:
+        click.echo(
+            json.dumps(
+                {"list_id": list_id, "removed_count": len(payload_items), "legacy_fallback": used_fallback},
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return
+
+    mode = " (legacy fallback)" if used_fallback else ""
+    console.print(f"[green]Marked {len(payload_items)} items as done on list {list_id}{mode}.[/green]")
+
+
+@shoppinglist.command("clear")
+@click.argument("list_id", type=int)
+@click.option("--removed-at", type=int, default=0, help="Timestamp in milliseconds to record removal.")
+@click.option("-y", "--yes", is_flag=True, help="Skip confirmation.")
+@click.option("--json", "as_json", is_flag=True, help="Output raw JSON.")
+def clear_list(list_id: int, removed_at: int, yes: bool, as_json: bool) -> None:
+    """Clear all current items from a shopping list."""
+    client, _ = _client_and_config()
+    try:
+        items = client.get(f"/api/shoppinglist/{list_id}/items")
+    except ApiError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    item_ids = [int(item.get("id")) for item in items if item.get("id") is not None]
+    if not item_ids:
+        if as_json:
+            click.echo(json.dumps({"list_id": list_id, "removed_count": 0, "legacy_fallback": False}, indent=2))
+            return
+        console.print("No items to clear.")
+        return
+    if not yes and not click.confirm(f"Clear {len(item_ids)} items from list {list_id}?", default=False):
+        raise click.ClickException("Aborted.")
+
+    payload_items: list[dict[str, int]] = []
+    for item_id in item_ids:
+        entry: dict[str, int] = {"item_id": item_id}
+        if removed_at > 0:
+            entry["removed_at"] = removed_at
+        payload_items.append(entry)
+
+    try:
+        used_fallback = _bulk_remove_items(client, list_id, payload_items)
+    except ApiError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if as_json:
+        click.echo(
+            json.dumps(
+                {"list_id": list_id, "removed_count": len(payload_items), "legacy_fallback": used_fallback},
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return
+    mode = " (legacy fallback)" if used_fallback else ""
+    console.print(f"[green]Cleared {len(payload_items)} items from list {list_id}{mode}.[/green]")
+
+
+@shoppinglist.command("add-items-from-file")
+@click.argument("list_id", type=int)
+@click.option(
+    "--from-file",
+    "from_file",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="JSON/YAML/text file with item names or {name,description} entries.",
+)
+@click.option("--json", "as_json", is_flag=True, help="Output raw JSON.")
+def add_items_from_file(list_id: int, from_file: Path, as_json: bool) -> None:
+    """Add many items to a shopping list from file."""
+    entries = _load_bulk_items_file(from_file)
+    client, _ = _client_and_config()
+    results: list[Any] = []
+    for entry in entries:
+        try:
+            results.append(client.post(f"/api/shoppinglist/{list_id}/add-item-by-name", json=entry))
+        except ApiError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+    if as_json:
+        click.echo(json.dumps(results, indent=2, sort_keys=True))
+        return
+    console.print(f"[green]Ensured {len(entries)} items in list {list_id} from {from_file}.[/green]")

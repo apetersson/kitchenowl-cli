@@ -3,10 +3,14 @@ from __future__ import annotations
 import click
 
 from kitchenowl_cli.commands.auth import auth
+from kitchenowl_cli.commands.category import category
 from kitchenowl_cli.commands.config_cmd import config_group
+from kitchenowl_cli.commands.expense import expense
 from kitchenowl_cli.commands.household import household
+from kitchenowl_cli.commands.planner import planner
 from kitchenowl_cli.commands.recipe import recipe
 from kitchenowl_cli.commands.shoppinglist import shoppinglist
+from kitchenowl_cli.commands.tag import tag
 from kitchenowl_cli.commands.user import user
 
 
@@ -16,10 +20,14 @@ def cli() -> None:
 
 
 cli.add_command(auth)
+cli.add_command(category)
 cli.add_command(config_group)
+cli.add_command(expense)
 cli.add_command(household)
+cli.add_command(planner)
 cli.add_command(recipe)
 cli.add_command(shoppinglist)
+cli.add_command(tag)
 cli.add_command(user)
 
 

@@ -4,8 +4,9 @@ from dataclasses import dataclass
 from typing import Any
 
 import requests
+from requests import RequestException
 
-from .config import save_config
+from .config import config_lock, load_config, save_config
 
 
 def normalize_server_url(url: str) -> str:
@@ -64,23 +65,35 @@ class ApiClient:
         return {"Authorization": f"Bearer {token}"}
 
     def refresh_tokens(self) -> None:
-        headers = self._auth_header("refresh_token")
-        response = self.session.get(
-            self._url("/api/auth/refresh"),
-            headers=headers,
-            timeout=30,
-        )
-        if not response.ok:
-            raise ApiError(
-                f"Token refresh failed: {_extract_error(response)}",
-                response.status_code,
-            )
-        payload = response.json()
-        self.config["access_token"] = payload["access_token"]
-        self.config["refresh_token"] = payload["refresh_token"]
-        if "user" in payload:
-            self.config["user"] = payload["user"]
-        save_config(self.config)
+        with config_lock():
+            latest_config = load_config()
+            if latest_config.get("refresh_token"):
+                self.config["refresh_token"] = latest_config["refresh_token"]
+            if latest_config.get("access_token"):
+                self.config["access_token"] = latest_config["access_token"]
+            if latest_config.get("user"):
+                self.config["user"] = latest_config["user"]
+
+            headers = self._auth_header("refresh_token")
+            try:
+                response = self.session.get(
+                    self._url("/api/auth/refresh"),
+                    headers=headers,
+                    timeout=30,
+                )
+            except RequestException as exc:
+                raise ApiError(f"Token refresh failed: {exc}") from exc
+            if not response.ok:
+                raise ApiError(
+                    f"Token refresh failed: {_extract_error(response)}",
+                    response.status_code,
+                )
+            payload = response.json()
+            self.config["access_token"] = payload["access_token"]
+            self.config["refresh_token"] = payload["refresh_token"]
+            if "user" in payload:
+                self.config["user"] = payload["user"]
+            save_config(self.config, already_locked=True)
 
     def request(
         self,
@@ -97,15 +110,22 @@ class ApiClient:
             headers.update(self._auth_header("access_token"))
         elif auth == "refresh":
             headers.update(self._auth_header("refresh_token"))
+        elif auth == "none":
+            pass
+        else:
+            raise ApiError(f"Unsupported auth mode `{auth}`.")
 
-        response = self.session.request(
-            method=method.upper(),
-            url=self._url(path),
-            json=json,
-            params=params,
-            headers=headers,
-            timeout=30,
-        )
+        try:
+            response = self.session.request(
+                method=method.upper(),
+                url=self._url(path),
+                json=json,
+                params=params,
+                headers=headers,
+                timeout=30,
+            )
+        except RequestException as exc:
+            raise ApiError(f"Request failed: {exc}") from exc
 
         if response.status_code == 401 and auth == "access" and _retry:
             self.refresh_tokens()
@@ -152,15 +172,18 @@ def login(
     device: str = "kitchenowl-cli",
 ) -> dict[str, Any]:
     url = f"{normalize_server_url(server_url)}/api/auth"
-    response = requests.post(
-        url,
-        json={
-            "username": username,
-            "password": password,
-            "device": device,
-        },
-        timeout=30,
-    )
+    try:
+        response = requests.post(
+            url,
+            json={
+                "username": username,
+                "password": password,
+                "device": device,
+            },
+            timeout=30,
+        )
+    except RequestException as exc:
+        raise ApiError(f"Login failed: {exc}") from exc
     if not response.ok:
         raise ApiError(_extract_error(response), response.status_code)
     return response.json()
@@ -184,11 +207,14 @@ def signup(
     }
     if email:
         body["email"] = email
-    response = requests.post(
-        url,
-        json=body,
-        timeout=30,
-    )
+    try:
+        response = requests.post(
+            url,
+            json=body,
+            timeout=30,
+        )
+    except RequestException as exc:
+        raise ApiError(f"Signup failed: {exc}") from exc
     if not response.ok:
         raise ApiError(_extract_error(response), response.status_code)
     return response.json()

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import click
 from rich.console import Console
 from rich.table import Table
@@ -14,6 +16,19 @@ console = Console()
 @click.group()
 def auth() -> None:
     """Authentication commands."""
+
+
+def _set_default_household(cfg: dict[str, Any]) -> str | None:
+    try:
+        client = ApiClient(cfg)
+        households = client.get("/api/household")
+    except ApiError as exc:
+        return str(exc)
+
+    if households and isinstance(households, list) and not cfg.get("default_household"):
+        cfg["default_household"] = households[0]["id"]
+        save_config(cfg)
+    return None
 
 
 @auth.command()
@@ -49,18 +64,15 @@ def login(server: str | None, username: str | None, password: str | None, device
     cfg["user"] = payload.get("user")
     save_config(cfg)
 
-    try:
-        client = ApiClient(cfg)
-        households = client.get("/api/household")
-        if households and isinstance(households, list) and not cfg.get("default_household"):
-            cfg["default_household"] = households[0]["id"]
-            save_config(cfg)
-    except ApiError:
-        pass
+    setup_warning = _set_default_household(cfg)
 
     console.print("[green]Login successful.[/green]")
     if cfg.get("default_household"):
         console.print(f"Default household: {cfg['default_household']}")
+    if setup_warning:
+        console.print(
+            f"[yellow]Warning: login succeeded but default household setup failed: {setup_warning}[/yellow]"
+        )
 
 
 @auth.command()
@@ -90,7 +102,7 @@ def signup(
             show_default=bool(default_server),
         )
     if not username:
-        username = click.prompt("Username or email")
+        username = click.prompt("Username")
     if not name:
         name = click.prompt("Full name")
     if not password:
@@ -114,18 +126,15 @@ def signup(
     cfg["user"] = payload.get("user")
     save_config(cfg)
 
-    try:
-        client = ApiClient(cfg)
-        households = client.get("/api/household")
-        if households and isinstance(households, list) and not cfg.get("default_household"):
-            cfg["default_household"] = households[0]["id"]
-            save_config(cfg)
-    except ApiError:
-        pass
+    setup_warning = _set_default_household(cfg)
 
     console.print("[green]Signup successful.[/green]")
     if cfg.get("default_household"):
         console.print(f"Default household: {cfg['default_household']}")
+    if setup_warning:
+        console.print(
+            f"[yellow]Warning: signup succeeded but default household setup failed: {setup_warning}[/yellow]"
+        )
 
 
 @auth.command()

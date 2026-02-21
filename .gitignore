@@ -6,7 +6,9 @@ __pycache__/
 # Distribution / packaging
 dist/
 build/
+PKG-INFO
 *.egg-info/
+*.dist-info/
 .Python
 
 # Virtual environments
