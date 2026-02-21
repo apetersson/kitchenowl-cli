@@ -7,7 +7,14 @@ name = "kitchenowl-cli"
 version = "0.2.0"
 description = "CLI for interacting with the KitchenOwl API."
 readme = "README.md"
+authors = [
+  { name = "Andreas Petersson" },
+]
+license = { text = "MIT" }
 requires-python = ">=3.10"
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+]
 dependencies = [
   "click>=8.1.7",
   "requests>=2.31.0",

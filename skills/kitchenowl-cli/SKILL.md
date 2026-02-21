@@ -1,7 +1,7 @@
 ---
 name: kitchenowl-cli
 description: Use kitchenowl-cli from terminal with pipx install, auth, and core read/write commands for KitchenOwl.
-metadata: {"author":"KitchenOwl","homepage":"https://github.com/kitchenowl/kitchenowl-cli","openclaw":{"requires":{"anyBins":["kitchenowl"]},"install":["pipx install kitchenowl-cli"]}}
+metadata: {"author":"Andreas Petersson","homepage":"https://github.com/kitchenowl/kitchenowl-cli","openclaw":{"requires":{"anyBins":["kitchenowl"]},"install":["pipx install kitchenowl-cli"]}}
 ---
 
 # KitchenOwl CLI Skill

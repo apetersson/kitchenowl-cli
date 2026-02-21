@@ -2,6 +2,10 @@
 
 Command-line client for KitchenOwl's `/api` endpoints, covering auth, household, recipe, shopping list, and user workflows.
 
+## License
+
+`kitchenowl-cli` is licensed under the MIT License.
+
 ## Supported CLI surface
 
 - `kitchenowl auth [login|logout|status|signup]` — JWT login with refresh, logout and signup helpers.  
