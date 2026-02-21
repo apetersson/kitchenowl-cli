@@ -143,16 +143,24 @@ init_file.write_text(text)
 PY
 
 cd "$ROOT_DIR"
-mapfile -t modified_files < <(
+modified_files=()
+while IFS= read -r file; do
+  [[ -n "$file" ]] && modified_files+=("$file")
+done < <(
   {
     git diff --name-only
     git diff --name-only --cached
   } | awk 'NF' | sort -u
 )
-mapfile -t untracked_files < <(git ls-files --others --exclude-standard)
+
+untracked_files=()
+while IFS= read -r file; do
+  [[ -n "$file" ]] && untracked_files+=("$file")
+done < <(git ls-files --others --exclude-standard)
 unexpected_changes=()
 
-for file in "${modified_files[@]}"; do
+for file in "${modified_files[@]+"${modified_files[@]}"}"; do
+  [[ -n "$file" ]] || continue
   is_expected=false
   for expected_file in "${SCHEMA_FILES[@]}"; do
     if [[ "$file" == "$expected_file" ]]; then
@@ -166,7 +174,8 @@ for file in "${modified_files[@]}"; do
   fi
 done
 
-for file in "${untracked_files[@]}"; do
+for file in "${untracked_files[@]+"${untracked_files[@]}"}"; do
+  [[ -n "$file" ]] || continue
   unexpected_changes+=("$file")
 done
 
