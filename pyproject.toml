@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kitchenowl-cli"
-version = "0.2.0"
+version = "0.2.1"
 description = "CLI for interacting with the KitchenOwl API."
 readme = "README.md"
 authors = [
